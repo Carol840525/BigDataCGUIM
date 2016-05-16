@@ -1,0 +1,47 @@
+---
+title: "1928-1969間，小兒麻痺在美國各州的發生率變化"
+output: github_document
+---
+
+#資料前處理
+
+讀資料進來
+```{r}
+polio<-read.csv("POLIO_Incidence.csv",stringsAsFactors = F)
+head(polio)
+```
+
+將寬表格轉為長表格
+```{r}
+#install.packages("reshape")
+library(reshape)
+polio.m<-melt(polio,id.vars = c('YEAR','WEEK'))
+head(polio.m)
+```
+
+處理缺值
+```{r}
+polio.m[polio.m$value=="-",]$value<-NA #處理缺值,將"-"轉為NA
+polio.m$value<-as.numeric(as.character(polio.m$value)) #將value欄位轉為數字
+```
+
+計算年度發生率
+```{r}
+polio.sumYear<- #各州各年度加總，計算該年度的總發生率
+    aggregate(value~YEAR+variable,data=polio.m,FUN=sum,na.rm=F)
+head(polio.sumYear)
+```
+
+#視覺化呈現
+
+因要求顯示1928-1969年間小兒麻痺在美國各州的發生率變化，表示需要用三維的圖來呈現各洲每年的發生率，x軸放年度，y軸放各州的名字，每個點則放小兒麻痺的發生率，藉此就能清楚比較每個州每年的發生率之間的關係，也可以清楚看到在1955年之後，發生率都有變小的趨勢，因而選擇使用以Heatmap來畫圖。
+
+```{r}
+library(ggplot2) #for ggplot()
+ggplot(polio.sumYear, aes(YEAR,variable )) + #aes(x,y)
+    geom_tile(aes(fill = value),colour = "white")+ #geom_tile: 區塊著色
+      geom_vline(xintercept = 1955)+ #geom_tile: 區塊著色
+    scale_fill_gradient(low = "white",high = "red") #數值低：白色
+```
+
+圖形說明: 上圖為美國在1928-1969年間，小兒麻痺在各州的發生率變化。可以發現在1928-1955年間發生率每年都有慢慢成長的趨勢，但是自從1955年出現小兒麻痺疫苗之後，發生率瞬間驟降，甚至有些州發生率等於0，可見小兒麻痺疫苗帶來很好的效果。

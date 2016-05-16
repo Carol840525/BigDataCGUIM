@@ -37,6 +37,7 @@ head(polio.sumYear)
 因要求顯示1928-1969年間小兒麻痺在美國各州的發生率變化，表示需要用三維的圖來呈現各洲每年的發生率，x軸放年度，y軸放各州的名字，每個點則放小兒麻痺的發生率，藉此就能清楚比較每個州每年的發生率之間的關係，也可以清楚看到在1955年之後，發生率都有變小的趨勢，因而選擇使用以Heatmap來畫圖。
 
 ```{r}
+#install.packages("ggplot2")
 library(ggplot2) #for ggplot()
 ggplot(polio.sumYear, aes(YEAR,variable )) + #aes(x,y)
     geom_tile(aes(fill = value),colour = "white")+ #geom_tile: 區塊著色

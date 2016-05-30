@@ -1,0 +1,97 @@
+---
+title: "乳癌預測模型"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##資料前處理
+
+
+
+###資料解釋
+
+此資料來源為UCI Machine Learning Repository。
+
+資料內共紀錄699個病人資料，用來預測病人的乳房腫瘤是良性還是陰性，裡頭包含了11個參數，例如細胞大小等等...。分類結果為二元分類，包刮陰性(malignant)與良性(benign)。
+
+###資料讀取
+
+```{r}
+#install.packages("mlbench")
+library(mlbench)
+data(BreastCancer)
+str(BreastCancer)
+
+```
+###資料前處理
+留下沒有缺值的資料，並把無關病情的資料拿掉(ID)
+```{r}
+BreastCancerC<-BreastCancer[complete.cases(BreastCancer),
+!names(BreastCancer) %in% c("Id")] 
+c(nrow(BreastCancer),nrow(BreastCancerC))
+
+```
+
+###將資料隨機分為訓練組與測試組
+隨機將2/3的資料分到訓練組（Test==F），剩下1/3為測試組（Test==T)
+```{r}
+#install.packages("rpart")
+library(rpart)
+BreastCancerC$Test<-F 
+BreastCancerC[
+    sample(1:nrow(BreastCancerC),nrow(BreastCancerC)/3),
+    ]$Test<-T 
+
+c(sum(BreastCancerC$Test==F),sum(BreastCancerC$Test==T)) 
+
+```
+可得訓練組案例數為`r sum(BreastCancerC$Test==F)`測試組案例數為`r sum(BreastCancerC$Test==T)`
+
+##預測模型建立
+
+###模型建立
+由於變數多，且多為連續變項，而輸出為二元類別變項，故選擇決策樹演算法來建立模型。
+
+```{r}
+#install.packages("rpart")
+library(rpart)
+
+BreastCancerC$Class<-factor(BreastCancerC$Class,levels=c("malignant","benign"))
+
+#set.seed(1000)          
+fit<-rpart(Class~.,data=BreastCancerC[BreastCancerC$Test==F,]) 
+
+#install.packages("rpart.plot")
+library(rpart.plot)
+
+prp(fit)
+summary(fit)
+
+```
+
+###模型說明
+由上述參數可知，以決策樹建立模型預測乳房腫瘤是否為陰性或良性，經最佳化後，所用到的參數為上圖的決策樹所示
+
+
+##預測模型驗證
+
+```{r}
+#install.packages("caret")
+library(caret)
+MinePred<-predict(fit,newdata = BreastCancerC[BreastCancerC$Test==T,],type = "class")
+
+sensitivity(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)
+specificity(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)
+posPredValue(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)
+negPredValue(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)
+```
+
+使用病患資料來預測乳房腫瘤是否為陰性或良性，以決策樹模型預測是否為陰性，可得：
+
+- 敏感度 `r sensitivity(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)*100`%
+- 特異性 `r specificity(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)*100`%
+- 陽性預測率 `r posPredValue(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)*100`%
+- 陰性預測率 `r negPredValue(MinePred,BreastCancerC[BreastCancerC$Test==T,]$Class)*100`%
